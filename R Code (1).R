@@ -2,6 +2,7 @@
 
 library("rjson")
 setwd("C:/Users/James/Documents/R/KagglePizzaProblem")
+install.packages("KernSmooth")
 
 #Reads in the relevant .json file
 
@@ -112,7 +113,51 @@ meta_dataframe <- data.frame("giver_username_if_known" = unlist(giver_username_i
                              "unix_timestamp_of_request" = unlist(unix_timestamp_of_request),                           
                              "unix_timestamp_of_request_utc" = unlist(unix_timestamp_of_request_utc))
 
-# Precursory look at corellations.
 
-for (i in 1:length(meta_dataframe[1,])){
-  
+###################################################################
+#Exploratory analysis##############################################
+###################################################################
+
+###################################################################
+#The first trend to be explored is if having a lot of downvotes would lead to a dimished
+#probability of recieving pizza.
+###################################################################
+
+downvotes <- data.frame(meta_dataframe$requester_received_pizza, 
+                        meta_dataframe$number_of_downvotes_of_request_at_retrieval)
+
+#Now what we would expect to see is that as the number of downvotes increases the proportion of
+#people recieving pizza = (People who recieved pizza)/ (People who did not recieve pizza) begins 
+#to decrease
+
+#Creates a tabular version of the data.
+
+downvote_table <- table(downvotes)
+
+xvals <- unique(downvotes$meta_dataframe.number_of_downvotes_of_request_at_retrieval)
+yvals <- downvote_table[2,]/downvote_table[1,]
+plot(xvals, yvals, col = "dodgerblue", xlab = "Number of Downvotes",
+     ylab = "Proportion of Successful Pizza Requests", main = "Corellation between Number of Downvotes
+     and Proportion of Successful Pizza Requests", pch = 16)
+
+#Fits a linear model to the data whilst ignoring all values that jet off to infinity.
+
+lm_fit_df <- data.frame(xvals, yvals)
+lm_fit_df <- lm_fit_df[which(lm_fit_df$yvals != Inf),]
+
+fit <- lm(lm_fit_df$yvals ~ lm_fit_df$xvals)
+abline(0.438249, -0.009727, col = "firebrick1", lwd = 1.5)
+
+#Attempt at kernel smoothing the data with a plug-in method optimised parameter but shows very little.
+
+hhat <- dpik(lm_fit_df$xvals)
+kern <- ksmooth(lm_fit_df$xvals, lm_fit_df$yvals, bandwidth = hhat)
+lines(kern, lwd=2, col= "cadetblue")
+
+#To be honest there doesn't seem to be much of a corellation between the two factors which
+#is surprising.
+
+###################################################################
+#The first trend to be explored is if having a lot of upvotes would lead to a risen
+#probability of recieving pizza.
+###################################################################
