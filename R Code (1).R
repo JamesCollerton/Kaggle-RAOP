@@ -1,8 +1,8 @@
 #Sets working directory to the relevant space and brings up the appropriate library.
 
 library("rjson")
+library("KernSmooth")
 setwd("C:/Users/James/Documents/R/KagglePizzaProblem")
-install.packages("KernSmooth")
 
 #Reads in the relevant .json file
 
@@ -158,6 +158,72 @@ lines(kern, lwd=2, col= "cadetblue")
 #is surprising.
 
 ###################################################################
-#The first trend to be explored is if having a lot of upvotes would lead to a risen
+#The second trend to be explored is if having a lot of upvotes would lead to a risen
 #probability of recieving pizza.
 ###################################################################
+
+upvotes <- data.frame(meta_dataframe$requester_received_pizza, 
+                      meta_dataframe$number_of_upvotes_of_request_at_retrieval)
+
+#Now what we would expect to see is that as the number of upvotes increases the proportion of
+#people recieving pizza = (People who recieved pizza)/ (People who did not recieve pizza) begins 
+#to decrease
+
+#Creates a tabular version of the data.
+
+upvote_table <- table(upvotes)
+
+xvals <- unique(upvotes$meta_dataframe.number_of_upvotes_of_request_at_retrieval)
+yvals <- upvote_table[2,]/upvote_table[1,]
+plot(xvals, yvals, col = "dodgerblue", xlab = "Number of upvotes",
+     ylab = "Proportion of Successful Pizza Requests", main = "Corellation between Number of upvotes
+     and Proportion of Successful Pizza Requests", pch = 16)
+
+#Fits a linear model to the data whilst ignoring all values that jet off to infinity.
+
+lm_fit_df <- data.frame(xvals, yvals)
+lm_fit_df <- lm_fit_df[which(lm_fit_df$yvals != Inf),]
+
+fit <- lm(lm_fit_df$yvals ~ lm_fit_df$xvals)
+abline(0.653607, -0.001204, col = "firebrick1", lwd = 1.5)
+
+#Attempt at kernel smoothing the data with a plug-in method optimised parameter but shows very little.
+
+hhat <- 20
+kern <- ksmooth(lm_fit_df$xvals, lm_fit_df$yvals, bandwidth = hhat)
+lines(kern, lwd=2, col= "cadetblue")
+
+#Admittedly this is a little surprising, I thought there would be a corellation between
+#up or downvotes, but I wonder if this is actually what I should expect. I think that if
+#a post recieves a lot of attention then it will get a pizza.
+
+#To be honest this seems like just fucking around for absolutely no reason. I think the most sensible
+#trends to bother exploring are:
+#1) Requester upvotes + downvotes = Total attention.
+#2) Requester number of comments
+#TO BE HONEST THE BEST WAY TO DEAL WITH THIS IS TO SUM THE TWO ABOVE.
+#3) Timestamp, see what time of day it was at and if that bears any relation to anything.
+
+total_attention = meta_dataframe$requester_upvotes_plus_downvotes_at_retrieval +
+                  meta_dataframe$request_number_of_comments_at_retrieval
+
+total_attention_df = data.frame(total_attention, meta_dataframe$requester_received_pizza)
+
+plot(total_attention_df$meta_dataframe.requester_received_pizza, total_attention_df$total_attention)
+
+#This sort of shows the same thing, that there's no clear corellation between the two. I think
+#the most productive way forward may be text mining.
+
+#The strategy going forward will be to seperate out the requests into successful and unsuccessful
+#and then build up frequency tables of each.
+
+#Titles text mining.
+
+successful_requests = meta_dataframe[which(meta_dataframe$requester_received_pizza == TRUE),]
+
+successful_titles = successful_requests$request_title
+new_successful_titles = c()
+
+for (i in 1:length(successful_titles)){
+  new_successful_titles[i] = as.vector(successful_titles[i])
+}
