@@ -204,10 +204,10 @@ lines(kern, lwd=2, col= "cadetblue")
 #TO BE HONEST THE BEST WAY TO DEAL WITH THIS IS TO SUM THE TWO ABOVE.
 #3) Timestamp, see what time of day it was at and if that bears any relation to anything.
 
-total_attention = meta_dataframe$requester_upvotes_plus_downvotes_at_retrieval +
+total_attention <- meta_dataframe$requester_upvotes_plus_downvotes_at_retrieval +
                   meta_dataframe$request_number_of_comments_at_retrieval
 
-total_attention_df = data.frame(total_attention, meta_dataframe$requester_received_pizza)
+total_attention_df <- data.frame(total_attention, meta_dataframe$requester_received_pizza)
 
 plot(total_attention_df$meta_dataframe.requester_received_pizza, total_attention_df$total_attention)
 
@@ -219,11 +219,38 @@ plot(total_attention_df$meta_dataframe.requester_received_pizza, total_attention
 
 #Titles text mining.
 
-successful_requests = meta_dataframe[which(meta_dataframe$requester_received_pizza == TRUE),]
+#Successful
 
-successful_titles = successful_requests$request_title
-new_successful_titles = c()
+successful_requests <- meta_dataframe[which(meta_dataframe$requester_received_pizza == TRUE),]
+
+successful_titles <- successful_requests$request_title
+new_successful_titles <- list()
 
 for (i in 1:length(successful_titles)){
-  new_successful_titles[i] = as.vector(successful_titles[i])
+  new_successful_titles[[i]] <- unlist(strsplit(as.vector(successful_titles[i]), " "))
 }
+
+all_successful_title_words = unlist(new_successful_titles)
+all_successful_title_words_table_df <- data.frame(table(all_successful_title_words))
+all_successful_title_words_table_df <- all_title_words_table_df[order(all_successful_title_words_table_df$Freq),]
+
+#So now we have the frequencies of all the words used in the title. Next step is to remove the most
+#common ones in the English language.
+
+#Stripped from the web.
+
+#Trying to find most common words in English language
+
+words_page <- "https://www.englishclub.com/vocabulary/common-words-100.htm"
+words_page <- readLines(words_page)
+
+useful_words = words_page[95:194]
+
+for (i in 1:length(useful_words)){
+  useful_words[i] = strsplit(useful_words[i], "<")[[1]][1]
+  useful_words[i] = strsplit(useful_words[i], " ")[[1]][2]
+}
+
+#Strip away all most useful words.
+
+all_successful_title_words_table_df <- all_successful_title_words_table_df[-which(all_successful_title_words_table_df$all_successful_title_words %in% useful_words),]
