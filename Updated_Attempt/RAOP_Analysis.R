@@ -59,73 +59,38 @@ meta_dataframe <- data.frame("giver_username_if_known" = unlist(lapply(meta_data
 #probability of recieving pizza.
 ###################################################################
 
-downvotes <- data.frame(meta_dataframe$requester_received_pizza, 
-                        meta_dataframe$number_of_downvotes_of_request_at_retrieval)
+check_voting_impact <- function(vote_type)
+{
+	votes <- data.frame(meta_dataframe$requester_received_pizza, 
+                      vote_type)
 
-#Now what we would expect to see is that as the number of downvotes increases the proportion of
-#people recieving pizza = (People who recieved pizza)/ (People who did not recieve pizza) begins 
-#to decrease
+	vote_table <- table(votes)
 
-#Creates a tabular version of the data.
+	xvals <- unique(as.numeric(colnames(vote_table)))
+	yvals <- vote_table["TRUE",]/(vote_table["TRUE",] + vote_table["FALSE",])
+  
+  xvals <- xvals[yvals > 0]
+	yvals <- yvals[yvals > 0]
+  
+	plot(xvals, yvals, col = "dodgerblue", xlab = "Number of Downvotes",
+     	 ylab = "Proportion of Successful Pizza Requests", main = "Corellation between Number of Votes
+     	 and Proportion of Successful Pizza Requests", pch = 16)
 
-downvote_table <- table(downvotes)
+	#Fits a linear model to the data whilst ignoring all values that jet off to infinity.
 
-xvals <- unique(as.numeric(colnames(downvote_table)))
-yvals <- downvote_table["FALSE",]/(downvote_table["TRUE",] + downvote_table["FALSE",])
-plot(xvals, yvals, col = "dodgerblue", xlab = "Number of Downvotes",
-     ylab = "Proportion of Successful Pizza Requests", main = "Corellation between Number of Downvotes
-     and Proportion of Successful Pizza Requests", pch = 16)
+	lm_fit_df <- data.frame(xvals, yvals)
+	lm_fit_df <- lm_fit_df[which(lm_fit_df$yvals != Inf),]
 
-#Fits a linear model to the data whilst ignoring all values that jet off to infinity.
+	fit <- lm(lm_fit_df$yvals ~ lm_fit_df$xvals)
+	abline(data.frame(summary(fit)$coefficients)$Estimate, col = "firebrick1", lwd = 1.5)
 
-lm_fit_df <- data.frame(xvals, yvals)
-lm_fit_df <- lm_fit_df[which(lm_fit_df$yvals != Inf),]
+	# Finally look at Pearson's.
 
-fit <- lm(lm_fit_df$yvals ~ lm_fit_df$xvals)
-abline(data.frame(summary(fit)$coefficients)$Estimate, col = "firebrick1", lwd = 1.5)
+	cor(yvals, xvals, method = "pearson")
+}
 
-# Finally look at Pearson's.
-
-cor(yvals, xvals, method = "pearson")
-
-#To be honest there doesn't seem to be much of a corellation between the two factors which
-#is surprising.
-
-###################################################################
-#The second trend to be explored is if having a lot of upvotes would lead to a risen
-#probability of recieving pizza.
-###################################################################
-
-upvotes <- data.frame(meta_dataframe$requester_received_pizza, 
-                      meta_dataframe$number_of_upvotes_of_request_at_retrieval)
-
-#Now what we would expect to see is that as the number of upvotes increases the proportion of
-#people recieving pizza = (People who recieved pizza)/ (People who did not recieve pizza) begins 
-#to decrease
-
-#Creates a tabular version of the data.
-
-upvote_table <- table(upvotes)
-
-xvals <- unique(upvotes$meta_dataframe.number_of_upvotes_of_request_at_retrieval)
-yvals <- upvote_table[2,]/upvote_table[1,]
-plot(xvals, yvals, col = "dodgerblue", xlab = "Number of upvotes",
-     ylab = "Proportion of Successful Pizza Requests", main = "Corellation between Number of upvotes
-     and Proportion of Successful Pizza Requests", pch = 16)
-
-#Fits a linear model to the data whilst ignoring all values that jet off to infinity.
-
-lm_fit_df <- data.frame(xvals, yvals)
-lm_fit_df <- lm_fit_df[which(lm_fit_df$yvals != Inf),]
-
-fit <- lm(lm_fit_df$yvals ~ lm_fit_df$xvals)
-abline(data.frame(summary(fit)$coefficients)$Estimate, col = "firebrick1", lwd = 1.5)
-
-#Attempt at kernel smoothing the data with a plug-in method optimised parameter but shows very little.
-
-hhat <- 20
-kern <- ksmooth(lm_fit_df$xvals, lm_fit_df$yvals, bandwidth = hhat)
-lines(kern, lwd=2, col= "cadetblue")
+check_voting_impact(meta_dataframe$number_of_downvotes_of_request_at_retrieval)
+check_voting_impact(meta_dataframe$number_of_upvotes_of_request_at_retrieval)
 
 #Admittedly this is a little surprising, I thought there would be a corellation between
 #up or downvotes, but I wonder if this is actually what I should expect. I think that if
@@ -135,7 +100,6 @@ lines(kern, lwd=2, col= "cadetblue")
 #trends to bother exploring are:
 #1) Requester upvotes + downvotes = Total attention.
 #2) Requester number of comments
-#TO BE HONEST THE BEST WAY TO DEAL WITH THIS IS TO SUM THE TWO ABOVE.
 #3) Timestamp, see what time of day it was at and if that bears any relation to anything.
 
 total_attention <- meta_dataframe$requester_upvotes_plus_downvotes_at_retrieval +
@@ -144,6 +108,7 @@ total_attention <- meta_dataframe$requester_upvotes_plus_downvotes_at_retrieval 
 total_attention_df <- data.frame(total_attention, meta_dataframe$requester_received_pizza)
 
 plot(total_attention_df$meta_dataframe.requester_received_pizza, total_attention_df$total_attention)
+plot(total_attention_df$total_attention, total_attention_df$meta_dataframe.requester_received_pizza)
 
 #This sort of shows the same thing, that there's no clear corellation between the two. I think
 #the most productive way forward may be text mining.
