@@ -70,8 +70,8 @@ downvotes <- data.frame(meta_dataframe$requester_received_pizza,
 
 downvote_table <- table(downvotes)
 
-xvals <- unique(downvotes$meta_dataframe.number_of_downvotes_of_request_at_retrieval)
-yvals <- downvote_table[2,]/downvote_table[1,]
+xvals <- unique(as.numeric(colnames(downvote_table)))
+yvals <- downvote_table["FALSE",]/(downvote_table["TRUE",] + downvote_table["FALSE",])
 plot(xvals, yvals, col = "dodgerblue", xlab = "Number of Downvotes",
      ylab = "Proportion of Successful Pizza Requests", main = "Corellation between Number of Downvotes
      and Proportion of Successful Pizza Requests", pch = 16)
@@ -84,11 +84,9 @@ lm_fit_df <- lm_fit_df[which(lm_fit_df$yvals != Inf),]
 fit <- lm(lm_fit_df$yvals ~ lm_fit_df$xvals)
 abline(data.frame(summary(fit)$coefficients)$Estimate, col = "firebrick1", lwd = 1.5)
 
-#Attempt at kernel smoothing the data with a plug-in method optimised parameter but shows very little.
+# Finally look at Pearson's.
 
-hhat <- dpik(lm_fit_df$xvals)
-kern <- ksmooth(lm_fit_df$xvals, lm_fit_df$yvals, bandwidth = hhat)
-lines(kern, lwd=2, col= "cadetblue")
+cor(yvals, xvals, method = "pearson")
 
 #To be honest there doesn't seem to be much of a corellation between the two factors which
 #is surprising.
