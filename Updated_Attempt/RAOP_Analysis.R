@@ -59,18 +59,21 @@ meta_dataframe <- data.frame("giver_username_if_known" = unlist(lapply(meta_data
 #probability of recieving pizza.
 ###################################################################
 
-check_voting_impact <- function(vote_type)
+check_voting_impact <- function(vote_type, sufficient_data_threshold)
 {
 	votes <- data.frame(meta_dataframe$requester_received_pizza, 
                       vote_type)
 
 	vote_table <- table(votes)
+  
+  false_sufficient_data <- which(vote_table["FALSE",] > sufficient_data_threshold)
+  true_sufficient_data <- which(vote_table["TRUE",] > sufficient_data_threshold)
+  
+  sufficient_data <- intersect(false_sufficient_data, true_sufficient_data)
+  vote_table <- vote_table[,sufficient_data]
 
 	xvals <- unique(as.numeric(colnames(vote_table)))
 	yvals <- vote_table["TRUE",]/(vote_table["TRUE",] + vote_table["FALSE",])
-  
-  xvals <- xvals[yvals > 0]
-	yvals <- yvals[yvals > 0]
   
 	plot(xvals, yvals, col = "dodgerblue", xlab = "Number of Downvotes",
      	 ylab = "Proportion of Successful Pizza Requests", main = "Corellation between Number of Votes
@@ -89,29 +92,11 @@ check_voting_impact <- function(vote_type)
 	cor(yvals, xvals, method = "pearson")
 }
 
-check_voting_impact(meta_dataframe$number_of_downvotes_of_request_at_retrieval)
-check_voting_impact(meta_dataframe$number_of_upvotes_of_request_at_retrieval)
+check_voting_impact(meta_dataframe$number_of_downvotes_of_request_at_retrieval, 7)
+check_voting_impact(meta_dataframe$number_of_upvotes_of_request_at_retrieval, 8)
 
-#Admittedly this is a little surprising, I thought there would be a corellation between
-#up or downvotes, but I wonder if this is actually what I should expect. I think that if
-#a post recieves a lot of attention then it will get a pizza.
-
-#To be honest this seems like just fucking around for absolutely no reason. I think the most sensible
-#trends to bother exploring are:
-#1) Requester upvotes + downvotes = Total attention.
-#2) Requester number of comments
-#3) Timestamp, see what time of day it was at and if that bears any relation to anything.
-
-total_attention <- meta_dataframe$requester_upvotes_plus_downvotes_at_retrieval +
-  meta_dataframe$request_number_of_comments_at_retrieval
-
-total_attention_df <- data.frame(total_attention, meta_dataframe$requester_received_pizza)
-
-plot(total_attention_df$meta_dataframe.requester_received_pizza, total_attention_df$total_attention)
-plot(total_attention_df$total_attention, total_attention_df$meta_dataframe.requester_received_pizza)
-
-#This sort of shows the same thing, that there's no clear corellation between the two. I think
-#the most productive way forward may be text mining.
+# So now we have shown that, when you ignore posts with sparse information, there is
+# a strong correlation between upvotes and pizza, and a weak one between downvotes.
 
 
 
