@@ -1,14 +1,19 @@
 #Sets working directory to the relevant space and brings up the appropriate library.
 
-# required_packages <- c("tm", "rjson", "KernSmooth", "SnowballC", "wordcloud")
+# required_packages <- c("tm", "rjson", "KernSmooth", "SnowballC", "wordcloud", "httr", "XML", "RCurl")
 
 # install.packages(required_packages)
+
+install.packages("RCurl")
 
 library('tm')
 library("rjson")
 library("KernSmooth")
 library('SnowballC')
 library('wordcloud')
+library('httr')    
+library('XML')
+library('RCurl')
 
 setwd("~/Documents/Programming/Git_Folders/Kaggle-RAOP/Updated_Attempt/Data")
 
@@ -98,25 +103,55 @@ check_voting_impact(meta_dataframe$number_of_upvotes_of_request_at_retrieval, 8)
 # So now we have shown that, when you ignore posts with sparse information, there is
 # a strong correlation between upvotes and pizza, and a weak one between downvotes.
 
+# ------------------------------------------------------------------------------------------------
 
+create_word_cloud <- function(requests){
 
+  titles <- requests$request_title
+  new_titles <- list()
 
+  for (i in 1:length(titles)){
+    new_titles[[i]] <- unlist(strsplit(as.vector(titles[i]), " "))
+  }
 
+  all_title_words = unlist(new_titles)
+  all_title_words_table_df <- data.frame(table(all_title_words))
+  all_title_words_table_df <- all_title_words_table_df[order(all_title_words_table_df$Freq),]
 
+  words_page <- "https://en.wikipedia.org/wiki/Most_common_words_in_English"
+  tables <- readHTMLTable(words_page)
+  useful_words <- tables$'NULL'$V2
 
+  useful_words = c(useful_words, "is", "Pizza", "pizza", "[Request]", "[REQUEST]", "[request]", "-")
 
+  all_title_words_table_df <- all_title_words_table_df[-which(all_title_words_table_df$all_title_words %in% useful_words),]
+  all_title_words_table_df <- all_title_words_table_df[order(all_title_words_table_df$Freq),]
 
+  #This gives us something to look at and play with. Now we try using the text mining package to
+  #create a word cloud.
 
+  for_word_cloud_corpus <- Corpus(VectorSource(all_title_words_table_df$all_title_words))
 
+  #cleaning
 
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, stripWhitespace)
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, tolower)
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, PlainTextDocument)
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, removeWords, stopwords("english"))
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, stemDocument)
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, removeWords, c("[request]", "request"))
 
+  wordcloud(for_word_cloud_corpus, scale = c(4, 1), max.words = 100, colors = brewer.pal(8, "Dark2"))
 
+}
 
+successful_requests <- meta_dataframe[which(meta_dataframe$requester_received_pizza == TRUE),]
+failed_requests <- meta_dataframe[which(meta_dataframe$requester_received_pizza == FALSE),]
 
+create_word_cloud(successful_requests)
+create_word_cloud(failed_requests)
 
-
-
-
+# ------------------------------------------------------------------------------------------------
 
 #The strategy going forward will be to seperate out the requests into successful and unsuccessful
 #and then build up frequency tables of each.
