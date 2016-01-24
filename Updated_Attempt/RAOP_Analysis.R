@@ -105,9 +105,9 @@ check_voting_impact(meta_dataframe$number_of_upvotes_of_request_at_retrieval, 8)
 
 # ------------------------------------------------------------------------------------------------
 
-create_word_cloud <- function(requests){
+create_word_cloud <- function(titles){
 
-  titles <- requests$request_title
+#   titles <- requests$request_title
   new_titles <- list()
 
   for (i in 1:length(titles)){
@@ -145,8 +145,11 @@ create_word_cloud <- function(requests){
 
 }
 
-successful_requests <- meta_dataframe[which(meta_dataframe$requester_received_pizza == TRUE),]
-failed_requests <- meta_dataframe[which(meta_dataframe$requester_received_pizza == FALSE),]
+successful_requests_titles <- meta_dataframe[which(meta_dataframe$requester_received_pizza == TRUE),]$request_title
+failed_requests_titles <- meta_dataframe[which(meta_dataframe$requester_received_pizza == FALSE),]$request_title
+
+successful_requests_text <- meta_dataframe[which(meta_dataframe$requester_received_pizza == TRUE),]$request_text
+failed_requests_text <- meta_dataframe[which(meta_dataframe$requester_received_pizza == FALSE),]$request_text
 
 create_word_cloud(successful_requests)
 create_word_cloud(failed_requests)
