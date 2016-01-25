@@ -118,7 +118,7 @@ create_word_cloud <- function(titles){
   all_title_words_table_df <- data.frame(table(all_title_words))
   all_title_words_table_df <- all_title_words_table_df[order(all_title_words_table_df$Freq),]
 
-  words_page <- "https://en.wikipedia.org/wiki/Most_common_words_in_English"
+  words_page <- getURL("https://en.wikipedia.org/wiki/Most_common_words_in_English")
   tables <- readHTMLTable(words_page)
   useful_words <- tables$'NULL'$V2
 
@@ -141,7 +141,7 @@ create_word_cloud <- function(titles){
   for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, stemDocument)
   for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, removeWords, c("[request]", "request"))
 
-  wordcloud(for_word_cloud_corpus, scale = c(4, 1), max.words = 100, colors = brewer.pal(8, "Dark2"))
+  wordcloud(for_word_cloud_corpus, scale = c(4, 1), max.words = 40, colors = brewer.pal(8, "Dark2"))
 
 }
 
@@ -151,139 +151,9 @@ failed_requests_titles <- meta_dataframe[which(meta_dataframe$requester_received
 successful_requests_text <- meta_dataframe[which(meta_dataframe$requester_received_pizza == TRUE),]$request_text
 failed_requests_text <- meta_dataframe[which(meta_dataframe$requester_received_pizza == FALSE),]$request_text
 
-create_word_cloud(successful_requests)
-create_word_cloud(failed_requests)
+create_word_cloud(successful_requests_titles)
+create_word_cloud(failed_requests_titles)
+create_word_cloud(successful_requests_text)
+create_word_cloud(failed_requests_text)
 
 # ------------------------------------------------------------------------------------------------
-
-#Now we look at the actual text of posts and see if there's anything pertinent in there.
-
-#The strategy going forward will be to seperate out the requests into successful and unsuccessful
-#and then build up frequency tables of each.
-
-#Texts text mining.
-
-#Successful
-
-successful_requests <- meta_dataframe[which(meta_dataframe$requester_received_pizza == TRUE),]
-
-successful_texts <- successful_requests$request_text
-new_successful_texts <- list()
-
-for (i in 1:length(successful_texts)){
-  new_successful_texts[[i]] <- unlist(strsplit(as.vector(successful_texts[i]), " "))
-}
-
-all_successful_text_words = unlist(new_successful_texts)
-all_successful_text_words_table_df <- data.frame(table(all_successful_text_words))
-all_successful_text_words_table_df <- all_successful_text_words_table_df[order(all_successful_text_words_table_df$Freq),]
-
-#So now we have the frequencies of all the words used in the text. Next step is to remove the most
-#common ones in the English language.
-
-#Stripped from the web.
-
-#Trying to find most common words in English language
-
-words_page <- "https://www.englishclub.com/vocabulary/common-words-100.htm"
-words_page <- readLines(words_page)
-
-useful_words = words_page[92:191]
-
-for (i in 1:length(useful_words)){
-  useful_words[i] = strsplit(useful_words[i], "<")[[1]][1]
-  useful_words[i] = strsplit(useful_words[i], " ")[[1]][2]
-}
-
-useful_words = c(useful_words, "is", "Pizza", "pizza", "[Request]", "[REQUEST]", "[request]", "-")
-
-#Strip away all most useful words.
-
-all_successful_text_words_table_df <- all_successful_text_words_table_df[-which(all_successful_text_words_table_df$all_successful_text_words %in% useful_words),]
-all_successful_text_words_table_df <- all_successful_text_words_table_df[order(all_successful_text_words_table_df$Freq),]
-
-#This gives us something to look at and play with. Now we try using the text mining package to
-#create a word cloud.
-
-for_word_cloud_corpus <- Corpus(VectorSource(all_successful_text_words_table_df$all_successful_text_words))
-
-#cleaning
-
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, stripWhitespace)
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, tolower)
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, removeWords, stopwords("english"))
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, stemDocument)
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, removeWords, c("[request]", "request"))
-
-wordcloud(for_word_cloud_corpus, scale = c(4, 1), max.words = 100, colors = brewer.pal(8, "Dark2"))
-
-#Failed
-
-failed_requests <- meta_dataframe[which(meta_dataframe$requester_received_pizza == FALSE),]
-
-failed_texts <- failed_requests$request_text
-new_failed_texts <- list()
-
-for (i in 1:length(failed_texts)){
-  new_failed_texts[[i]] <- unlist(strsplit(as.vector(failed_texts[i]), " "))
-}
-
-all_failed_text_words = unlist(new_failed_texts)
-all_failed_text_words_table_df <- data.frame(table(all_failed_text_words))
-all_failed_text_words_table_df <- all_failed_text_words_table_df[order(all_failed_text_words_table_df$Freq),]
-
-#So now we have the frequencies of all the words used in the text. Next step is to remove the most
-#common ones in the English language.
-
-#Stripped from the web.
-
-#Trying to find most common words in English language
-
-words_page <- "https://www.englishclub.com/vocabulary/common-words-100.htm"
-words_page <- readLines(words_page)
-
-useful_words = words_page[92:191]
-
-for (i in 1:length(useful_words)){
-  useful_words[i] = strsplit(useful_words[i], "<")[[1]][1]
-  useful_words[i] = strsplit(useful_words[i], " ")[[1]][2]
-}
-
-useful_words = c(useful_words, "is", "Pizza", "pizza", "[Request]", "[REQUEST]", "[request]", "-")
-
-#Strip away all most useful words.
-
-all_failed_text_words_table_df <- all_failed_text_words_table_df[-which(all_failed_text_words_table_df$all_failed_text_words %in% useful_words),]
-all_failed_text_words_table_df <- all_failed_text_words_table_df[order(all_failed_text_words_table_df$Freq),]
-
-#This gives us something to look at and play with. Now we try using the text mining package to
-#create a word cloud.
-
-for_word_cloud_corpus <- Corpus(VectorSource(all_failed_text_words_table_df$all_failed_text_words))
-
-#cleaning
-
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, stripWhitespace)
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, tolower)
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, removeWords, stopwords("english"))
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, stemDocument)
-for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, removeWords, c("[request]", "request"))
-
-wordcloud(for_word_cloud_corpus, scale = c(4, 1), max.words = 100, colors = brewer.pal(8, "Dark2"))
-
-#In reality this didn't really show a lot so we need to strip away the words that are quite common in both
-#fields. We look at the top 20 words that occur in both and then try removing any that are the same.
-
-top_failed_words <- all_failed_text_words_table_df[order(all_failed_text_words_table_df$Freq),]
-top_successful_words <- all_successful_text_words_table_df[order(all_successful_text_words_table_df$Freq),]
-top_failed_words <- top_failed_words[(nrow(top_failed_words)-nrow(top_successful_words)+1):nrow(top_failed_words),]
-
-top_common_words_df <- data.frame(top_failed_words, top_successful_words)
-
-#This didn't actually show that much, I think it would be much better to look at these ideas as proportions.
-
-number_of_successful_requests <- nrow(successful_requests)
-number_of_failed_requests <- nrow(failed_requests)
-
-top_common_words_df$Freq <- paste(top_common_words_df$Freq, number_of_failed_requests, sep = "/")
-top_common_words_df$Freq.1 <- paste(top_common_words_df$Freq.1, number_of_successful_requests, sep = "/")
