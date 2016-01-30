@@ -68,4 +68,8 @@ container <- create_container(documentTermMatrix,
                               virgin=FALSE)
 model <- train_model(container, "SVM", kernel="linear", cost=1)
 
-predictionMatrix <- create_matrix(predictionData, originalMatrix=dtMatrix)
+create_matrix_edited <- edit(create_matrix)
+predictionMatrix <- create_matrix_edited(validationTextOutputDataFrame$meta_dataframe.request_text, originalMatrix=documentTermMatrix)
+predSize = length(validationTextOutputDataFrame$meta_dataframe.request_text);
+predictionContainer <- create_container(predictionMatrix, labels=rep(0,predSize), testSize=1:predSize, virgin=FALSE)
+results <- classify_model(predictionContainer, model)
