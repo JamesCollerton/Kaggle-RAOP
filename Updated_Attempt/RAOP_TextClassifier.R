@@ -55,16 +55,35 @@ meta_dataframe <- data.frame("giver_username_if_known" = unlist(lapply(meta_data
                              "unix_timestamp_of_request" = unlist(lapply(meta_data, function(l) l[[31]])),                           
                              "unix_timestamp_of_request_utc" = unlist(lapply(meta_data, function(l) l[[32]])))
 
+createCoreWords <- function(plainText) {
+  for_word_cloud_corpus <- Corpus(VectorSource(plainText))
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, stripWhitespace)
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, tolower)
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, PlainTextDocument)
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, removeWords, stopwords("english"))
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, stemDocument)
+  for_word_cloud_corpus <- tm_map(for_word_cloud_corpus, removeWords, c("[request]", "request"))
+  for_word_cloud_corpus[[1]]$content
+}
+
 # Creates a datadrame of the text, and if it was successful. Then splits it into two parts. The first is
 # the training data and the second is the validation data.
 textOutputDataFrame <- data.frame(meta_dataframe$request_text, meta_dataframe$requester_received_pizza)
-trainingTextOutputDataFrame <- textOutputDataFrame[1:(0.75*nrow(textOutputDataFrame)),]
-validationTextOutputDataFrame <- textOutputDataFrame[(0.75*nrow(textOutputDataFrame)):(nrow(textOutputDataFrame)),]
 
-documentTermMatrix <- create_matrix(trainingTextOutputDataFrame$meta_dataframe.request_text)
+trainingTextOutputDataFrame <- textOutputDataFrame[1:(0.75*nrow(textOutputDataFrame)),]
+requestText <- sapply(trainingTextOutputDataFrame$meta_dataframe.request_text, createCoreWords)
+requesterRecievedPizza <- trainingTextOutputDataFrame$meta_dataframe.requester_received_pizza
+trainingTextOutputDataFrame <- data.frame(requestText, requesterRecievedPizza)
+
+validationTextOutputDataFrame <- textOutputDataFrame[(0.75*nrow(textOutputDataFrame)):(nrow(textOutputDataFrame)),]
+validationTextOutputDataFrame$meta_dataframe.request_text <- sapply(validationTextOutputDataFrame$meta_dataframe.request_text, createCoreWords)
+
+documentTermMatrix <- create_matrix(trainingTextOutputDataFrame$requestText)
+trainingLength <- length(trainingTextOutputDataFrame$requesterRecievedPizza)
 container <- create_container(documentTermMatrix, 
-                              trainingTextOutputDataFrame$meta_dataframe.requester_received_pizza, 
-                              trainSize = 1:length(trainingTextOutputDataFrame$meta_dataframe.requester_received_pizza),
+                              trainingTextOutputDataFrame$requesterRecievedPizza, 
+                              trainSize = 1:(trainingLength/2),
+                              testSize = (trainingLength/2 + 1):trainingLength,
                               virgin=FALSE)
 model <- train_model(container, "SVM", kernel="linear", cost=1)
 
