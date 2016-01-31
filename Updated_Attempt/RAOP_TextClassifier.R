@@ -70,7 +70,7 @@ createCoreWords <- function(plainText) {
 # the training data and the second is the validation data.
 textOutputDataFrame <- data.frame(meta_dataframe$request_text, meta_dataframe$requester_received_pizza)
 
-trainingTextOutputDataFrame <- textOutputDataFrame[1:(0.75*nrow(textOutputDataFrame)),]
+trainingTextOutputDataFrame <- textOutputDataFrame[1:(0.3*nrow(textOutputDataFrame)),]
 requestText <- sapply(trainingTextOutputDataFrame$meta_dataframe.request_text, createCoreWords)
 requesterRecievedPizza <- trainingTextOutputDataFrame$meta_dataframe.requester_received_pizza
 trainingTextOutputDataFrame <- data.frame(requestText, requesterRecievedPizza)
@@ -85,10 +85,17 @@ container <- create_container(documentTermMatrix,
                               trainSize = 1:(trainingLength/2),
                               testSize = (trainingLength/2 + 1):trainingLength,
                               virgin=FALSE)
-model <- train_model(container, "SVM", kernel="linear", cost=1)
+model <- train_model(container, "SLDA", kernel="linear", cost=1)
 
-create_matrix_edited <- edit(create_matrix)
+# create_matrix_edited <- edit(create_matrix)
 predictionMatrix <- create_matrix_edited(validationTextOutputDataFrame$meta_dataframe.request_text, originalMatrix=documentTermMatrix)
 predSize = length(validationTextOutputDataFrame$meta_dataframe.request_text);
 predictionContainer <- create_container(predictionMatrix, labels=rep(0,predSize), testSize=1:predSize, virgin=FALSE)
 results <- classify_model(predictionContainer, model)
+
+classifiedTrue <- which(results$SLDA_LABEL == TRUE)
+actuallyTrue <- which(validationTextOutputDataFrame$meta_dataframe.requester_received_pizza == TRUE)
+numCorrectClassifications <- length(intersect(classifiedTrue, actuallyTrue))
+numRequestersRecievedPizza <- length(actuallyTrue)
+percentageCorrect <- numCorrectClassifications / numRequestersRecievedPizza
+print(percentageCorrect)
