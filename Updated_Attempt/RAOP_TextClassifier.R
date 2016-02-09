@@ -70,7 +70,7 @@ createCoreWords <- function(plainText) {
 # the training data and the second is the validation data.
 textOutputDataFrame <- data.frame(meta_dataframe$request_text, meta_dataframe$requester_received_pizza)
 
-trainingTextOutputDataFrame <- textOutputDataFrame[1:(0.3*nrow(textOutputDataFrame)),]
+trainingTextOutputDataFrame <- textOutputDataFrame[1:(0.75*nrow(textOutputDataFrame)),]
 requestText <- sapply(trainingTextOutputDataFrame$meta_dataframe.request_text, createCoreWords)
 requesterRecievedPizza <- trainingTextOutputDataFrame$meta_dataframe.requester_received_pizza
 trainingTextOutputDataFrame <- data.frame(requestText, requesterRecievedPizza)
